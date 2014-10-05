@@ -2,6 +2,8 @@
 
 {% load i18n %}
 
+{% load url from future %}
+
 {% block column_left %}
     <div class="aside-options">
         <h4>{% trans "Your Account" %}</h4>
@@ -42,7 +44,13 @@
                         {% trans "Wish Lists" %}<i class="icon-arrow-right"></i>
                     </a>
                 </li>
+                <li{% if active_tab == 'Support' %} class="active"{% endif %}>
+                    <a href="{% url 'support:customer-ticket-list' %}">
+                        {% trans "Support" %}<i class="icon-arrow-right"></i>
+                    </a>
+                </li>
             {% endblock %}
         </ul>
     </div>
 {% endblock %}
+
