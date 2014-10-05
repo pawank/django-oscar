@@ -245,7 +245,9 @@ INSTALLED_APPS = [
     # For profile testing
     'apps.user',
     # Sentry (for live demo site)
-    'raven.contrib.django.raven_compat'
+    'raven.contrib.django.raven_compat',
+    'oscar_support',
+    'sslserver'
 ]
 
 # South is only supported in Django < 1.7
@@ -338,6 +340,13 @@ new_nav.append(
             },
         ]
     })
+
+from django.utils.translation import ugettext_lazy as _
+new_nav.append({
+          'label': _("Support"),
+                  'icon': 'icon-comments',
+                          'url_name': 'support-dashboard:ticket-list',
+})
 OSCAR_DASHBOARD_NAVIGATION = new_nav
 
 GEOIP_PATH = os.path.join(os.path.dirname(__file__), 'geoip')
@@ -349,6 +358,9 @@ DATACASH_CLIENT = ''
 DATACASH_PASSWORD = ''
 DATACASH_USE_CV2AVS = True
 DATACASH_CURRENCY = 'GBP'
+
+# django-oscar-support
+from oscar_support.defaults import *
 
 # Some mildly sensitive settings are kept out this file, such as the secret
 # key, paypal credentials and datacash credentials.  If you want to test the
