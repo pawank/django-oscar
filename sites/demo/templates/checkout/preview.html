@@ -6,7 +6,7 @@
     <div class="span6">
     <h3>{% trans "Payment" %}</h3>
     <div class="well well-success" data-behaviours="match-height">
-        {% if request.session.payment_options != "xcod" %}
+        {% if request.session.payment_options != "cod" %}
         <h4>Bankcard</h4>
         <p>{% blocktrans with amount=order_total.incl_tax|currency %}
             {{ amount }} will be debited from your bankcard:

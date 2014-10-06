@@ -16,6 +16,10 @@ from django.views import generic
 from oscar.apps.shipping.methods import NoShippingRequired
 from oscar.core.loading import get_class, get_classes
 
+PAYMENT_TYPE_COD = "COD"
+COD_LOWER = "cod"
+PAYMENT_TYPE_CC = "cc"
+
 # Customise the core PaymentDetailsView to integrate Datacash
 class PaymentDetailsView(views.PaymentDetailsView):
     def check_payment_data_is_captured(self, request):
@@ -74,7 +78,7 @@ class PaymentDetailsView(views.PaymentDetailsView):
 
         session_payment_option = request.session.get("payment_options", None)
         print "payment_options inside handle_payment_details_submission = %s" % session_payment_option
-        if session_payment_option == "cod":
+        if session_payment_option == COD_LOWER:
           print "COD case"
           bankcard_form = BankcardForm()
           bankcard_form.number = "1000010000000007"
@@ -119,7 +123,7 @@ class PaymentDetailsView(views.PaymentDetailsView):
 
         session_payment_option = request.session.get("payment_options", None)
         print "payment_options inside handle_place_order_submission = %s" % session_payment_option
-        if session_payment_option == "cod":
+        if session_payment_option == COD_LOWER:
           print "COD case inside handle_place_order_submission"
           submission = self.build_submission(
               order_kwargs={
@@ -127,7 +131,8 @@ class PaymentDetailsView(views.PaymentDetailsView):
               },
               payment_kwargs={
                   'bankcard_form': bankcard_form,
-                  'billing_address_form': address_form
+                  'billing_address_form': address_form,
+                  'cod':True,
               }
           )
           return self.submit(**submission)
@@ -146,39 +151,54 @@ class PaymentDetailsView(views.PaymentDetailsView):
         # raised and handled by the parent PaymentDetail view)
         print "Order # %s" % order_number
         print "Total amount # %s" % total
+        is_session_payment_option = kwargs[COD_LOWER]
+        print "payment_options inside handle_payment = %s" % is_session_payment_option
+        if is_session_payment_option == True:
+          print "COD case inside handle_payment"
+          ref = PAYMENT_TYPE_COD
+          source_type, _ = SourceType.objects.get_or_create(name=PAYMENT_TYPE_COD)
+          source = source_type.sources.model(
+              source_type=source_type,
+              currency=total.currency,
+              amount_allocated=total.incl_tax,
+              reference=ref)
+          self.add_payment_source(source)
+          # Also record payment event
+          self.add_payment_event(
+              'cod', total.incl_tax, reference=ref)
+        else:
+          facade = Facade()
+          bankcard = kwargs['bankcard_form'].bankcard
+          datacash_ref = facade.pre_authorise(
+              order_number, total.incl_tax, bankcard)
 
-        facade = Facade()
-        bankcard = kwargs['bankcard_form'].bankcard
-        datacash_ref = facade.pre_authorise(
-            order_number, total.incl_tax, bankcard)
+          # Request was successful - record the "payment source".  As this
+          # request was a 'pre-auth', we set the 'amount_allocated' - if we had
+          # performed an 'auth' request, then we would set 'amount_debited'.
+          source_type, _ = SourceType.objects.get_or_create(name='Datacash')
+          source = source_type.sources.model(
+              source_type=source_type,
+              currency=total.currency,
+              amount_allocated=total.incl_tax,
+              reference=datacash_ref)
+          self.add_payment_source(source)
 
-        # Request was successful - record the "payment source".  As this
-        # request was a 'pre-auth', we set the 'amount_allocated' - if we had
-        # performed an 'auth' request, then we would set 'amount_debited'.
-        source_type, _ = SourceType.objects.get_or_create(name='Datacash')
-        source = source_type.sources.model(
-            source_type=source_type,
-            currency=total.currency,
-            amount_allocated=total.incl_tax,
-            reference=datacash_ref)
-        self.add_payment_source(source)
-
-        # Also record payment event
-        self.add_payment_event(
-            'pre-auth', total.incl_tax, reference=datacash_ref)
+          # Also record payment event
+          self.add_payment_event(
+              'pre-auth', total.incl_tax, reference=datacash_ref)
 
 def checkoutPayments(request):
         print "checkout payments"
         if request.method != "POST":
-          request.session["payment_options"] = "cc"
+          request.session["payment_options"] = PAYMENT_TYPE_CC
           return redirect('/checkout/')
 
         payment_option = request.POST.get('payment_options', '')
         print "Payment option: %s" % payment_option
         session_payment_option = request.session.get("payment_options", None)
         print "payment_options = %s" % session_payment_option
-        if payment_option == "cod":
-          request.session["payment_options"] = "cod"
+        if payment_option == COD_LOWER:
+          request.session["payment_options"] = COD_LOWER
           #return redirect('/checkout/payment-preview/')
         return redirect('/checkout/payment-details/')
 
