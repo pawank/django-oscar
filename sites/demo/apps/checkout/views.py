@@ -40,10 +40,10 @@ class PaymentMethodView(CheckoutSessionMixin, generic.TemplateView):
         session_payment_option = request.session.get("payment_options", None)
         print "payment_options = %s" % session_payment_option
 
-        if session_payment_option is None:
-            return self.get_success_response()
-        else:
-            return redirect('checkout:payment-details')
+        #if session_payment_option is None:
+        return self.get_success_response()
+        #else:
+        #    return redirect('checkout:payment-details')
 
     def get_success_response(self):
         print "PaymentMethodView success"
@@ -171,7 +171,11 @@ class PaymentDetailsView(views.PaymentDetailsView):
 
     def post(self, request, *args, **kwargs):
         print "checkout_post"
-        if True:
+        return self.handle_payment_details_submission(request)
+
+def checkoutPayments(request):
+        print "checkout payments"
+        if request.method == "POST":
             payment_option = request.POST.get('payment_options', '')
             print "Payment option: %s" % payment_option
             session_payment_option = request.session.get("payment_options", None)
@@ -194,27 +198,10 @@ class PaymentDetailsView(views.PaymentDetailsView):
                         reverse('paypal-redirect'))
                 elif payment_option == "cc":
                     print "CC"
-                    return self.handle_payment_details_submission(request)
-                else:
                     return http.HttpResponseRedirect(
-                        reverse('checkout:select-payment'))
-
-        if self.preview:
-            if request.POST.get('action', '') == 'place_order':
-                print "action = place_order"
-                if session_payment_option is not None:
-                    payment_option = session_payment_option
-                if payment_option == "cod":
-                    #Update order status here
+                            reverse('checkout:payment-details'))
+                else:
                     pass
-                elif payment_option == "bank":
-                    return self.submit_bank_order(request.basket)
-                elif payment_option == "paypal":
-                    return http.HttpResponseRedirect(
-                            reverse('paypal-redirect'))
-                elif payment_option == "cc":
-                    print "Preview CC"
-                    return self.handle_place_order_submission(request)
-                else:
-                    return self.submit_bankcard_order(request.basket)
-        return self.render_preview(request,**kwargs)
+
+        return redirect('/checkout/payment-method/')
+

@@ -14,6 +14,8 @@ from oscar.views import handler500, handler404, handler403  # noqa
 
 import oscar_support.urls
 
+from apps.checkout.views import checkoutPayments
+
 js_info_dict = {
     'packages': ('stores',),
 }
@@ -25,11 +27,13 @@ urlpatterns = [
     url(r'^i18n/', include('django.conf.urls.i18n')),
     url(r'^jsi18n/$', 'django.views.i18n.javascript_catalog', js_info_dict),
 
+    url(r'^checkout/payments', checkoutPayments),
     # Stores extension
     url(r'^stores/', include(stores_app.urls)),
     url(r'^dashboard/stores/', include(dashboard_app.urls)),
     # PayPal extension
     url(r'^checkout/paypal/', include('paypal.express.urls')),
+
 
     # Datacash extension
     url(r'^dashboard/datacash/', include(datacash_app.urls)),

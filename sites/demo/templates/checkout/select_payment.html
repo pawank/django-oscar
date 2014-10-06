@@ -5,7 +5,7 @@
     <div class="sub-header">
         <h2>How would you like to pay?</h2>
     </div>
-    <form method="post">
+    <form method="post" action="/checkout/payments">
         {% csrf_token %}
         <p>
             {{ billing_address_form.payment_options.0 }}
