@@ -14,7 +14,7 @@ from .forms import BillingAddressForm
 
 # Customise the core PaymentDetailsView to integrate Datacash
 class PaymentDetailsView(views.PaymentDetailsView):
-
+    template_name = "checkout/select_payment.html"
     def check_payment_data_is_captured(self, request):
         if request.method != "POST":
             raise exceptions.FailedPreCondition(
@@ -81,6 +81,9 @@ class PaymentDetailsView(views.PaymentDetailsView):
         shipping_address = self.get_shipping_address(
             self.request.basket)
         address_form = BillingAddressForm(shipping_address, request.POST)
+        print bankcard_form
+        print shipping_address
+        print address_form
         if address_form.is_valid() and bankcard_form.is_valid():
             # Forms still valid, let's submit an order
             submission = self.build_submission(
@@ -107,7 +110,7 @@ class PaymentDetailsView(views.PaymentDetailsView):
         # not valid / request refused by bank) then an exception would be
         # raised and handled by the parent PaymentDetail view)
         print "Order # %s" % order_number
-        print "Total amount # %d" % total
+        print "Total amount # %s" % total
 
         facade = Facade()
         bankcard = kwargs['bankcard_form'].bankcard
@@ -137,8 +140,6 @@ class PaymentDetailsView(views.PaymentDetailsView):
             print "Payment option: %s" % payment_option
             session_payment_option = request.session.get("payment_options", None)
             print "payment_options = %s" % session_payment_option
-            if session_payment_option is not None:
-                payment_option = session_payment_option
 
             if request.POST.get('action', '') == '':
                 print "action = ''"
@@ -156,12 +157,18 @@ class PaymentDetailsView(views.PaymentDetailsView):
                     print "Found paypal"
                     return http.HttpResponseRedirect(
                         reverse('paypal-redirect'))
+                elif payment_option == "cc":
+                    print "CC"
+                    pass
+                    #return self.handle_payment_details_submission(request)
                 else:
                     return http.HttpResponseRedirect(
-                        reverse('checkout:payment-details'))
+                        reverse('checkout:payment-details-for-options'))
 
             if request.POST.get('action', '') == 'place_order':
                 print "action = place_order"
+                if session_payment_option is not None:
+                    payment_option = session_payment_option
                 # Get results of payment option
                 if payment_option == "cod":
                     return self.submit_cod_order(request.basket)
@@ -172,6 +179,11 @@ class PaymentDetailsView(views.PaymentDetailsView):
                     return http.HttpResponseRedirect(
                             reverse('paypal-redirect'))
                     #return self.submit_bank_order(request.basket)
+                elif payment_option == "cc":
+                    print "CC"
+                    return self.handle_payment_details_submission(request)
+                    #return self.handle_place_order_submission(request)
+                    #return self.submit(request.basket)
                 else:
                     return self.submit_bankcard_order(request.basket)
             return self.render_preview(request)
