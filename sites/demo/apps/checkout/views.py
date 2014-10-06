@@ -16,42 +16,8 @@ from django.views import generic
 from oscar.apps.shipping.methods import NoShippingRequired
 from oscar.core.loading import get_class, get_classes
 
-CheckoutSessionMixin = get_class('checkout.session', 'CheckoutSessionMixin')
-class PaymentMethodView(CheckoutSessionMixin, generic.TemplateView):
-    """
-    View for a user to choose which payment method(s) they want to use.
-
-    This would include setting allocations if payment is to be split
-    between multiple sources. It's not the place for entering sensitive details
-    like bankcard numbers though - that belongs on the payment details view.
-    """
-    pre_conditions = [
-        'check_basket_is_not_empty',
-        'check_basket_is_valid',
-        'check_user_email_is_captured',
-        'check_shipping_data_is_captured']
-    skip_conditions = ['skip_unless_payment_is_required']
-
-    def get(self, request, *args, **kwargs):
-        print "PaymentMethodView"
-        # By default we redirect straight onto the payment details view. Shops
-        # that require a choice of payment method may want to override this
-        # method to implement their specific logic.
-        session_payment_option = request.session.get("payment_options", None)
-        print "payment_options = %s" % session_payment_option
-
-        #if session_payment_option is None:
-        return self.get_success_response()
-        #else:
-        #    return redirect('checkout:payment-details')
-
-    def get_success_response(self):
-        print "PaymentMethodView success"
-        return redirect('checkout:select-payment')
-
 # Customise the core PaymentDetailsView to integrate Datacash
 class PaymentDetailsView(views.PaymentDetailsView):
-    template_name = "checkout/select_payment.html"
     def check_payment_data_is_captured(self, request):
         if request.method != "POST":
             raise exceptions.FailedPreCondition(
@@ -106,6 +72,23 @@ class PaymentDetailsView(views.PaymentDetailsView):
                 request, bankcard_form=bankcard_form,
                 billing_address_form=address_form)
 
+        session_payment_option = request.session.get("payment_options", None)
+        print "payment_options inside handle_payment_details_submission = %s" % session_payment_option
+        if session_payment_option == "cod":
+          print "COD case"
+          bankcard_form = BankcardForm()
+          bankcard_form.number = "1000010000000007"
+          bankcard_form.ccv = 123
+          bankcard_form.start_month_0 = 10
+          bankcard_form.start_month_1 = 2011
+          bankcard_form.expiry_month_0 = 12
+          bankcard_form.expiry_month_1 = 2020
+          print bankcard_form
+          return self.render_preview(
+                request, bankcard_form=bankcard_form,
+                billing_address_form=address_form)
+
+
         # Forms are invalid - show them to the customer along with the
         # validation errors.
         return self.render_payment_details(
@@ -133,6 +116,21 @@ class PaymentDetailsView(views.PaymentDetailsView):
                 }
             )
             return self.submit(**submission)
+
+        session_payment_option = request.session.get("payment_options", None)
+        print "payment_options inside handle_place_order_submission = %s" % session_payment_option
+        if session_payment_option == "cod":
+          print "COD case inside handle_place_order_submission"
+          submission = self.build_submission(
+              order_kwargs={
+                  'billing_address': address_form.save(commit=False),
+              },
+              payment_kwargs={
+                  'bankcard_form': bankcard_form,
+                  'billing_address_form': address_form
+              }
+          )
+          return self.submit(**submission)
 
         # Must be DOM tampering as these forms were valid and were rendered in
         # a hidden element.  Hence, we don't need to be that friendly with our
@@ -169,39 +167,18 @@ class PaymentDetailsView(views.PaymentDetailsView):
         self.add_payment_event(
             'pre-auth', total.incl_tax, reference=datacash_ref)
 
-    def post(self, request, *args, **kwargs):
-        print "checkout_post"
-        return self.handle_payment_details_submission(request)
-
 def checkoutPayments(request):
         print "checkout payments"
-        if request.method == "POST":
-            payment_option = request.POST.get('payment_options', '')
-            print "Payment option: %s" % payment_option
-            session_payment_option = request.session.get("payment_options", None)
-            print "payment_options = %s" % session_payment_option
+        if request.method != "POST":
+          request.session["payment_options"] = "cc"
+          return redirect('/checkout/')
 
-            if request.POST.get('action', '') == '' and session_payment_option is None:
-                print "action = ''"
-                if len(payment_option) > 0:
-                    request.session["payment_options"] = payment_option
-
-                if payment_option == "cod":
-                    print "COD"
-                    pass
-                elif payment_option == "bank":
-                    #TODO
-                    pass
-                elif payment_option == "paypal":
-                    print "Found paypal"
-                    return http.HttpResponseRedirect(
-                        reverse('paypal-redirect'))
-                elif payment_option == "cc":
-                    print "CC"
-                    return http.HttpResponseRedirect(
-                            reverse('checkout:payment-details'))
-                else:
-                    pass
-
-        return redirect('/checkout/payment-method/')
+        payment_option = request.POST.get('payment_options', '')
+        print "Payment option: %s" % payment_option
+        session_payment_option = request.session.get("payment_options", None)
+        print "payment_options = %s" % session_payment_option
+        if payment_option == "cod":
+          request.session["payment_options"] = "cod"
+          #return redirect('/checkout/payment-preview/')
+        return redirect('/checkout/payment-details/')
 

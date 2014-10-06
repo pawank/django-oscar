@@ -102,14 +102,19 @@
         <div>
             <a href="https://www.verisign.com.au" target="_blank" title="https://www.verisign.com.au"><i class="verisign"></i></a>
             <span>{% trans "We accept" %} <br><i class="credit-cards"></i></span>
-            <a href="{% url 'checkout:index' %}?payment_options=cc" class="btn btn-large btn-primary">{% trans "Proceed to checkout" %}</a>
+            {# <a href="{% url 'checkout:index' %}?payment_options=cc" class="btn btn-large btn-primary">{% trans "Proceed to checkout" %}</a> #}
+            <a href="/checkout/payments" class="btn btn-large btn-primary">{% trans "Proceed to checkout" %}</a>
         </div>
         <strong>{% trans "or" %}</strong>
         <a href="{% url 'paypal-redirect' %}"><img src="https://www.paypal.com/en_US/i/btn/btn_xpressCheckout.gif"></a>
         <strong>{% trans "or" %}</strong>
         <div>
             <span>{% trans "No extra charges" %} <br></i></span>
-            <a href="{% url 'checkout:index' %}?payment_options=cod" class="btn btn-large btn-primary">{% trans "Cash on Delivery" %}</a>
+            <form id="cod_form" action="/checkout/payments" method="post">
+                {% csrf_token %}
+            <input type="hidden" name="payment_options" value="cod"/>
+            <button class="btn btn-large btn-primary" onClick="submitCOD();">{% trans "Cash on Delivery" %}</button>
+            </form>
         </div>
     </div>
 </div>
@@ -165,4 +170,9 @@
             </form>
         </div>
     {% endif %}
+{% endblock %}
+{% block onbodyload %}
+  function submitCOD() {
+    $("#cod_form").submit();
+  }
 {% endblock %}

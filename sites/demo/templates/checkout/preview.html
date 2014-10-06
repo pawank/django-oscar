@@ -6,7 +6,7 @@
     <div class="span6">
     <h3>{% trans "Payment" %}</h3>
     <div class="well well-success" data-behaviours="match-height">
-
+        {% if request.session.payment_options != "xcod" %}
         <h4>Bankcard</h4>
         <p>{% blocktrans with amount=order_total.incl_tax|currency %}
             {{ amount }} will be debited from your bankcard:
@@ -17,6 +17,7 @@
             {% trans "Card number" %}: {{ bankcard.obfuscated_number }} <br/>
             {% trans "Expiry month" %}: {{ bankcard.expiry_month }}</p>
         {% endwith %}
+        {% endif %}
 
         <h4>Billing address</h4>
         <p>
