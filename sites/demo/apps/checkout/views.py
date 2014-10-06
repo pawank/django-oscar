@@ -11,6 +11,43 @@ from oscar.apps.order.models import BillingAddress
 
 from .forms import BillingAddressForm
 
+from django.shortcuts import redirect
+from django.views import generic
+from oscar.apps.shipping.methods import NoShippingRequired
+from oscar.core.loading import get_class, get_classes
+
+CheckoutSessionMixin = get_class('checkout.session', 'CheckoutSessionMixin')
+class PaymentMethodView(CheckoutSessionMixin, generic.TemplateView):
+    """
+    View for a user to choose which payment method(s) they want to use.
+
+    This would include setting allocations if payment is to be split
+    between multiple sources. It's not the place for entering sensitive details
+    like bankcard numbers though - that belongs on the payment details view.
+    """
+    pre_conditions = [
+        'check_basket_is_not_empty',
+        'check_basket_is_valid',
+        'check_user_email_is_captured',
+        'check_shipping_data_is_captured']
+    skip_conditions = ['skip_unless_payment_is_required']
+
+    def get(self, request, *args, **kwargs):
+        print "PaymentMethodView"
+        # By default we redirect straight onto the payment details view. Shops
+        # that require a choice of payment method may want to override this
+        # method to implement their specific logic.
+        session_payment_option = request.session.get("payment_options", None)
+        print "payment_options = %s" % session_payment_option
+
+        if session_payment_option is None:
+            return self.get_success_response()
+        else:
+            return redirect('checkout:payment-details')
+
+    def get_success_response(self):
+        print "PaymentMethodView success"
+        return redirect('checkout:select-payment')
 
 # Customise the core PaymentDetailsView to integrate Datacash
 class PaymentDetailsView(views.PaymentDetailsView):
@@ -134,56 +171,50 @@ class PaymentDetailsView(views.PaymentDetailsView):
 
     def post(self, request, *args, **kwargs):
         print "checkout_post"
-        if self.preview:
+        if True:
             payment_option = request.POST.get('payment_options', '')
-            ctx = self.get_context_data()
             print "Payment option: %s" % payment_option
             session_payment_option = request.session.get("payment_options", None)
             print "payment_options = %s" % session_payment_option
 
-            if request.POST.get('action', '') == '':
+            if request.POST.get('action', '') == '' and session_payment_option is None:
                 print "action = ''"
                 if len(payment_option) > 0:
                     request.session["payment_options"] = payment_option
 
-                # Get results of payment option
                 if payment_option == "cod":
                     print "COD"
                     pass
-                    #return self.submit_cod_order(request.basket)
                 elif payment_option == "bank":
-                    return self.submit_bank_order(request.basket)
+                    #TODO
+                    pass
                 elif payment_option == "paypal":
                     print "Found paypal"
                     return http.HttpResponseRedirect(
                         reverse('paypal-redirect'))
                 elif payment_option == "cc":
                     print "CC"
-                    pass
-                    #return self.handle_payment_details_submission(request)
+                    return self.handle_payment_details_submission(request)
                 else:
                     return http.HttpResponseRedirect(
-                        reverse('checkout:payment-details-for-options'))
+                        reverse('checkout:select-payment'))
 
+        if self.preview:
             if request.POST.get('action', '') == 'place_order':
                 print "action = place_order"
                 if session_payment_option is not None:
                     payment_option = session_payment_option
-                # Get results of payment option
                 if payment_option == "cod":
-                    return self.submit_cod_order(request.basket)
+                    #Update order status here
+                    pass
                 elif payment_option == "bank":
                     return self.submit_bank_order(request.basket)
                 elif payment_option == "paypal":
-                    print "Found paypal"
                     return http.HttpResponseRedirect(
                             reverse('paypal-redirect'))
-                    #return self.submit_bank_order(request.basket)
                 elif payment_option == "cc":
-                    print "CC"
-                    return self.handle_payment_details_submission(request)
-                    #return self.handle_place_order_submission(request)
-                    #return self.submit(request.basket)
+                    print "Preview CC"
+                    return self.handle_place_order_submission(request)
                 else:
                     return self.submit_bankcard_order(request.basket)
-            return self.render_preview(request)
+        return self.render_preview(request,**kwargs)

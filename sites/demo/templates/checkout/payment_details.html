@@ -47,7 +47,7 @@
         </div>
         {% endif %}
 
-        {# {% if request.session.payment_options|length|get_digit:"-1" < 1 %} #}
+        {# {% if request.session.payment_options|length|get_digit:"-1" < 1 %}
         <div class="well well-info" id="payment_options_form" style="display: block;">
             <h3>{% trans "Payment Type" %}</h3>
             {{ billing_address_form.non_field_errors }}
@@ -65,6 +65,7 @@
                 </div>
             {% endif %}
         </div>
+        #}
 
         <button type="submit" class="pull-right btn btn-large btn-primary">{% trans "Continue" %}</button>
     </form>

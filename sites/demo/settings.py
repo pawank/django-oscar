@@ -247,7 +247,7 @@ INSTALLED_APPS = [
     # Sentry (for live demo site)
     'raven.contrib.django.raven_compat',
     'oscar_support',
-    'oscar_payments',
+    #'oscar_payments',
     'sslserver'
 ]
 

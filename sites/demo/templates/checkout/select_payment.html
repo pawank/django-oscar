@@ -1,0 +1,17 @@
+{% extends 'oscar/checkout/payment_details.html' %}
+{% load i18n %}
+
+{% block payment_details %}
+    <div class="sub-header">
+        <h2>How would you like to pay?</h2>
+    </div>
+    <form method="post">
+        {% csrf_token %}
+        <p>
+            {{ billing_address_form.payment_options.0 }}
+            {{ billing_address_form.payment_options.1 }}
+            {{ billing_address_form.payment_options.2 }}
+        </p>
+        <button type="submit" class="btn btn-large btn-primary">{% trans "Select" %}</button>
+    </form>
+{% endblock %}
