@@ -17,6 +17,15 @@ class BillingAddressForm(payment_forms.BillingAddressForm):
     same_as_shipping = forms.ChoiceField(
         widget=forms.RadioSelect, choices=CHOICES, initial=SAME_AS_SHIPPING)
 
+    COD, CC, PAYPAL = 'cod', 'cc', 'paypal'
+    PAYMENT_OPTIONS_CHOICES = (
+        (COD, 'Cash On Delivery'),
+        (CC, 'Credit Card'),
+        (PAYPAL, 'PayPal'),
+    )
+    payment_options = forms.ChoiceField(
+        widget=forms.RadioSelect, choices=PAYMENT_OPTIONS_CHOICES, initial=CC)
+
     class Meta(payment_forms.BillingAddressForm):
         model = BillingAddress
         exclude = ('search_text', 'first_name', 'last_name')
@@ -41,6 +50,7 @@ class BillingAddressForm(payment_forms.BillingAddressForm):
                 if field != 'same_as_shipping':
                     self.fields[field].required = False
 
+
     def _post_clean(self):
         # Don't run model validation if using shipping address
         if self.cleaned_data.get('same_as_shipping') == self.SAME_AS_SHIPPING:
@@ -54,5 +64,6 @@ class BillingAddressForm(payment_forms.BillingAddressForm):
             self.shipping_address.populate_alternative_model(billing_addr)
             if commit:
                 billing_addr.save()
+            print billing_addr
             return billing_addr
         return super(BillingAddressForm, self).save(commit)

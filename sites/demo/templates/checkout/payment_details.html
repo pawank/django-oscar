@@ -9,8 +9,8 @@
     {% block payment_details_content %}
     <form action="{% url 'checkout:preview' %}" class="payment-details form-horizontal" method="post">
         {% csrf_token %}
-
-        <div class="well well-info">
+        {{request.session.payment_options}}
+        <div class="well well-info" id="card_form" {% if request.session.payment_options != "cc" %} style="display: none;" {% endif %}>
             <h3>{% trans "Bankcard" %}</h3>
             {% include 'partials/form_fields.html' with form=bankcard_form %}
             <div class="alert alert-warning">
@@ -19,7 +19,8 @@
             </div>
         </div>
 
-        <div class="well well-info">
+        {% if request.session.payment_options == None %}
+        <div class="well well-info" id="billing_address_form" style="display: none;">
             <h3>{% trans "Billing address" %}</h3>
             {{ billing_address_form.non_field_errors }}
 
@@ -43,6 +44,26 @@
                 {% include 'partials/form_field.html' with field=billing_address_form.postcode %}
                 {% include 'partials/form_field.html' with field=billing_address_form.country %}
             </div>
+        </div>
+        {% endif %}
+
+        {# {% if request.session.payment_options|length|get_digit:"-1" < 1 %} #}
+        <div class="well well-info" id="payment_options_form" style="display: block;">
+            <h3>{% trans "Payment Type" %}</h3>
+            {{ billing_address_form.non_field_errors }}
+
+            {% if basket.is_shipping_required %}
+            <p>
+                {{ billing_address_form.payment_options.0 }}
+                {{ billing_address_form.payment_options.1 }}
+                {{ billing_address_form.payment_options.2 }}
+            </p>
+            <div>
+            {% else %}
+                <div style="">
+                    {{ billing_address_form.payment_options}}
+                </div>
+            {% endif %}
         </div>
 
         <button type="submit" class="pull-right btn btn-large btn-primary">{% trans "Continue" %}</button>

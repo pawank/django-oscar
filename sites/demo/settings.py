@@ -247,6 +247,7 @@ INSTALLED_APPS = [
     # Sentry (for live demo site)
     'raven.contrib.django.raven_compat',
     'oscar_support',
+    'oscar_payments',
     'sslserver'
 ]
 
@@ -361,6 +362,13 @@ DATACASH_CURRENCY = 'GBP'
 
 # django-oscar-support
 from oscar_support.defaults import *
+
+OSCAR_PAYMENT_MODULES = [
+    (r'^paypal/', 'boilerplate.apps.store.modules.payment.paypal'),
+]
+
+if DEBUG:
+  OSCAR_PAYMENT_MODULES.append((r'^dummy/', 'boilerplate.apps.store.modules.payment.dummy'))
 
 # Some mildly sensitive settings are kept out this file, such as the secret
 # key, paypal credentials and datacash credentials.  If you want to test the

@@ -6,6 +6,7 @@ from stores.app import application as stores_app
 from stores.dashboard.app import application as dashboard_app
 
 from apps.app import application
+
 from datacash.dashboard.app import application as datacash_app
 
 # These need to be imported into this namespace
@@ -27,7 +28,6 @@ urlpatterns = [
     # Stores extension
     url(r'^stores/', include(stores_app.urls)),
     url(r'^dashboard/stores/', include(dashboard_app.urls)),
-
     # PayPal extension
     url(r'^checkout/paypal/', include('paypal.express.urls')),
 

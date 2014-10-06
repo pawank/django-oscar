@@ -47,3 +47,18 @@ class Express(methods.Base):
             currency=basket.currency,
             excl_tax=total,
             incl_tax=total)
+
+class CashOnDeliveryWithCharges(methods.Base):
+    code = 'codwithprice'
+    name = 'Cash on Delivery (chargeable)'
+
+    charge_per_item = D('100.0')
+    description = render_to_string(
+        'shipping/express.html', {'charge_per_item': charge_per_item})
+
+    def calculate(self, basket):
+        total = basket.num_items * self.charge_per_item
+        return prices.Price(
+            currency=basket.currency,
+            excl_tax=total,
+            incl_tax=total)

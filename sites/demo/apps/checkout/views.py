@@ -22,6 +22,7 @@ class PaymentDetailsView(views.PaymentDetailsView):
                 message=_("Please enter your payment details"))
 
     def get_context_data(self, **kwargs):
+        print "get_context_data"
         ctx = super(PaymentDetailsView, self).get_context_data(**kwargs)
         # Ensure newly instantiated instances of the bankcard and billing
         # address forms are passed to the template context (when they aren't
@@ -39,6 +40,7 @@ class PaymentDetailsView(views.PaymentDetailsView):
                 'billing_address_form'].save(commit=False)
         return ctx
 
+
     def get_billing_address_form(self, shipping_address):
         """
         Return an instantiated billing address form
@@ -52,6 +54,7 @@ class PaymentDetailsView(views.PaymentDetailsView):
                                   instance=billing_addr)
 
     def handle_payment_details_submission(self, request):
+        print "handle_payment_details_submission"
         # Validate the submitted forms
         bankcard_form = BankcardForm(request.POST)
         shipping_address = self.get_shipping_address(
@@ -73,6 +76,7 @@ class PaymentDetailsView(views.PaymentDetailsView):
             billing_address_form=address_form)
 
     def handle_place_order_submission(self, request):
+        print "handle_place_order_submission"
         bankcard_form = BankcardForm(request.POST)
         shipping_address = self.get_shipping_address(
             self.request.basket)
@@ -98,9 +102,13 @@ class PaymentDetailsView(views.PaymentDetailsView):
             reverse('checkout:payment-details'))
 
     def handle_payment(self, order_number, total, **kwargs):
+        print "handle_payment"
         # Make request to DataCash - if there any problems (eg bankcard
         # not valid / request refused by bank) then an exception would be
         # raised and handled by the parent PaymentDetail view)
+        print "Order # %s" % order_number
+        print "Total amount # %d" % total
+
         facade = Facade()
         bankcard = kwargs['bankcard_form'].bankcard
         datacash_ref = facade.pre_authorise(
@@ -120,3 +128,50 @@ class PaymentDetailsView(views.PaymentDetailsView):
         # Also record payment event
         self.add_payment_event(
             'pre-auth', total.incl_tax, reference=datacash_ref)
+
+    def post(self, request, *args, **kwargs):
+        print "checkout_post"
+        if self.preview:
+            payment_option = request.POST.get('payment_options', '')
+            ctx = self.get_context_data()
+            print "Payment option: %s" % payment_option
+            session_payment_option = request.session.get("payment_options", None)
+            print "payment_options = %s" % session_payment_option
+            if session_payment_option is not None:
+                payment_option = session_payment_option
+
+            if request.POST.get('action', '') == '':
+                print "action = ''"
+                if len(payment_option) > 0:
+                    request.session["payment_options"] = payment_option
+
+                # Get results of payment option
+                if payment_option == "cod":
+                    print "COD"
+                    pass
+                    #return self.submit_cod_order(request.basket)
+                elif payment_option == "bank":
+                    return self.submit_bank_order(request.basket)
+                elif payment_option == "paypal":
+                    print "Found paypal"
+                    return http.HttpResponseRedirect(
+                        reverse('paypal-redirect'))
+                else:
+                    return http.HttpResponseRedirect(
+                        reverse('checkout:payment-details'))
+
+            if request.POST.get('action', '') == 'place_order':
+                print "action = place_order"
+                # Get results of payment option
+                if payment_option == "cod":
+                    return self.submit_cod_order(request.basket)
+                elif payment_option == "bank":
+                    return self.submit_bank_order(request.basket)
+                elif payment_option == "paypal":
+                    print "Found paypal"
+                    return http.HttpResponseRedirect(
+                            reverse('paypal-redirect'))
+                    #return self.submit_bank_order(request.basket)
+                else:
+                    return self.submit_bankcard_order(request.basket)
+            return self.render_preview(request)
