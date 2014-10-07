@@ -208,13 +208,16 @@ class PaymentDetailsView(views.PaymentDetailsView):
                     #Update order status here
                     pass
                 elif payment_option == "bank":
-                    return self.submit_bank_order(request.basket)
+                    #Add bank detail saving hook
+                    pass
                 elif payment_option == "paypal":
+                    #Just redirect to paypal and django-oscar-paypal will help here
                     return http.HttpResponseRedirect(
                             reverse('paypal-redirect'))
                 elif payment_option == "cc":
                     print "Preview CC"
                     return self.handle_place_order_submission(request)
                 else:
-                    return self.submit_bankcard_order(request.basket)
+                  #We should never see this
+                  pass
         return self.render_preview(request,**kwargs)

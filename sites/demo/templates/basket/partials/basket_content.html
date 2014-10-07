@@ -106,11 +106,6 @@
         </div>
         <strong>{% trans "or" %}</strong>
         <a href="{% url 'paypal-redirect' %}"><img src="https://www.paypal.com/en_US/i/btn/btn_xpressCheckout.gif"></a>
-        <strong>{% trans "or" %}</strong>
-        <div>
-            <span>{% trans "No extra charges" %} <br></i></span>
-            <a href="{% url 'checkout:index' %}?payment_options=cod" class="btn btn-large btn-primary">{% trans "Cash on Delivery" %}</a>
-        </div>
     </div>
 </div>
 <div class="alert alert-warning">
